@@ -17,6 +17,7 @@ libio_la_SOURCES = \
 	WKBWriter.cpp \
 	Writer.cpp \
 	Unload.cpp \
-	CLocalizer.cpp
+	CLocalizer.cpp \
+	GeoJSONWriter.cpp
 
 libio_la_LIBADD =
