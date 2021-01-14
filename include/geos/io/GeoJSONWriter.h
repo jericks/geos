@@ -82,11 +82,21 @@ private:
 
     std::vector<std::pair<double, double>> convertCoordinateSequence(const geom::CoordinateSequence* c);
 
+    void encodeGeometry(const geom::Geometry* g, nlohmann::ordered_json& j);
+
     void encodePoint(const geom::Point* p, nlohmann::ordered_json& j);
 
     void encodeLineString(const geom::LineString* l, nlohmann::ordered_json& j);
 
     void encodePolygon(const geom::Polygon* p, nlohmann::ordered_json& j);
+
+    void encodeMultiPoint(const geom::MultiPoint* p, nlohmann::ordered_json& j);
+
+    void encodeMultiLineString(const geom::MultiLineString* l, nlohmann::ordered_json& j);
+
+    void encodeMultiPolygon(const geom::MultiPolygon* m, nlohmann::ordered_json& j);
+
+    void encodeGeometryCollection(const geom::GeometryCollection* g, nlohmann::ordered_json& j);
 
 };
 

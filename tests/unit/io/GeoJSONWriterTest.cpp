@@ -86,6 +86,44 @@ void object::test<4>
     ensure_equals(result, "{\"type\":\"Polygon\",\"coordinates\":[[[35.0,10.0],[45.0,45.0],[15.0,40.0],[10.0,20.0],[35.0,10.0]],[[20.0,30.0],[35.0,35.0],[30.0,20.0],[20.0,30.0]]]}");
 }
 
+template<>
+template<>
+void object::test<5>
+()
+{
+    GeomPtr geom(wktreader.read("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))"));
+    std::string result = geojsonwriter.write(geom.get());
+    ensure_equals(result, "{\"type\":\"MultiPoint\",\"coordinates\":[[10.0,40.0],[40.0,30.0],[20.0,20.0],[30.0,10.0]]}");
+}
 
+template<>
+template<>
+void object::test<6>
+()
+{
+    GeomPtr geom(wktreader.read("MULTILINESTRING ((10 10, 20 20, 10 40),(40 40, 30 30, 40 20, 30 10))"));
+    std::string result = geojsonwriter.write(geom.get());
+    ensure_equals(result, "{\"type\":\"MultiLineString\",\"coordinates\":[[[10.0,10.0],[20.0,20.0],[10.0,40.0]],[[40.0,40.0],[30.0,30.0],[40.0,20.0],[30.0,10.0]]]}");
+}
+
+template<>
+template<>
+void object::test<7>
+()
+{
+    GeomPtr geom(wktreader.read("MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),((15 5, 40 10, 10 20, 5 10, 15 5)))"));
+    std::string result = geojsonwriter.write(geom.get());
+    ensure_equals(result, "{\"type\":\"MultiPolygon\",\"coordinates\":[[[[30.0,20.0],[45.0,40.0],[10.0,40.0],[30.0,20.0]]],[[[15.0,5.0],[40.0,10.0],[10.0,20.0],[5.0,10.0],[15.0,5.0]]]]}");
+}
+
+template<>
+template<>
+void object::test<8>
+()
+{
+    GeomPtr geom(wktreader.read("GEOMETRYCOLLECTION(POINT(1 1),POINT(2 2))"));
+    std::string result = geojsonwriter.write(geom.get());
+    ensure_equals(result, "{\"type\":\"GeometryCollection\",\"geometries\":[{\"type\":\"Point\",\"coordinates\":[1.0,1.0]},{\"type\":\"Point\",\"coordinates\":[2.0,2.0]}]}");
+}
 
 }
