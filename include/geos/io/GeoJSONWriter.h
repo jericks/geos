@@ -54,6 +54,10 @@ class Writer;
 namespace geos {
 namespace io {
 
+enum class GeoJSONType {
+    GEOMETRY, FEATURE, FEATURE_COLLECTION
+};
+
 /**
  * \class GeoJSONWriter
  *
@@ -63,7 +67,8 @@ namespace io {
  */
 class GEOS_DLL GeoJSONWriter {
 public:
-    GeoJSONWriter() = default;
+    GeoJSONWriter() : geojsonType(GeoJSONType::GEOMETRY) {};
+    GeoJSONWriter(GeoJSONType type) : geojsonType(type) {};
     ~GeoJSONWriter() = default;
 
     /// Returns WKT string for the given Geometry
@@ -77,6 +82,8 @@ public:
     //void writeFormatted(const geom::Geometry* geometry, Writer* writer);
 
 private:
+
+    GeoJSONType geojsonType;
 
     std::pair<double, double> convertCoordinate(const geom::Coordinate* c);
 
@@ -97,6 +104,10 @@ private:
     void encodeMultiPolygon(const geom::MultiPolygon* m, nlohmann::ordered_json& j);
 
     void encodeGeometryCollection(const geom::GeometryCollection* g, nlohmann::ordered_json& j);
+
+    void encodeFeature(const geom::Geometry* g, nlohmann::ordered_json& j);
+
+    void encodeFeatureCollection(const geom::Geometry* g, nlohmann::ordered_json& j);
 
 };
 

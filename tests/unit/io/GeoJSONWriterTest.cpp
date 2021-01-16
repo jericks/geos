@@ -126,4 +126,24 @@ void object::test<8>
     ensure_equals(result, "{\"type\":\"GeometryCollection\",\"geometries\":[{\"type\":\"Point\",\"coordinates\":[1.0,1.0]},{\"type\":\"Point\",\"coordinates\":[2.0,2.0]}]}");
 }
 
+template<>
+template<>
+void object::test<9>
+()
+{
+    GeomPtr geom(wktreader.read("POINT(-117 33)"));
+    std::string result = geos::io::GeoJSONWriter(geos::io::GeoJSONType::FEATURE).write(geom.get());
+    ensure_equals(result, "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}}");
+}
+
+template<>
+template<>
+void object::test<10>
+()
+{
+    GeomPtr geom(wktreader.read("POINT(-117 33)"));
+    std::string result = geos::io::GeoJSONWriter(geos::io::GeoJSONType::FEATURE_COLLECTION).write(geom.get());
+    ensure_equals(result, "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}}]}");
+}
+
 }
