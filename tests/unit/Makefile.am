@@ -167,6 +167,7 @@ geos_unit_SOURCES = \
 	io/WKBWriterTest.cpp \
 	io/WKTReaderTest.cpp \
 	io/WKTWriterTest.cpp \
+	io/GeoJSONReaderTest.cpp \
 	io/GeoJSONWriterTest.cpp \
 	io/WriterTest.cpp \
 	linearref/LengthIndexedLineTest.cpp \

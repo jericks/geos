@@ -12,6 +12,7 @@ geos_HEADERS = \
     ByteOrderDataInStream.inl \
     ByteOrderValues.h \
     CLocalizer.h \
+    GeoJSONReader.h \
     GeoJSONWriter.h \
     ParseException.h \
     StringTokenizer.h \
