@@ -43,6 +43,19 @@ namespace io { // geos.io
 
 std::string GeoJSONWriter::write(const geom::Geometry* geometry) {
     json j;
+    encode(geometry, j);
+    std::string geojson = j.dump();
+    return geojson;
+}
+
+std::string GeoJSONWriter::writeFormatted(const geom::Geometry* geometry, int indent) {
+    json j;
+    encode(geometry, j);
+    std::string geojson = j.dump(indent);
+    return geojson;
+}
+
+void GeoJSONWriter::encode(const geom::Geometry* geometry, nlohmann::ordered_json& j) {
     if(geojsonType == GeoJSONType::GEOMETRY) {
         encodeGeometry(geometry, j);
     } else if (geojsonType == GeoJSONType::FEATURE) {
@@ -50,8 +63,6 @@ std::string GeoJSONWriter::write(const geom::Geometry* geometry) {
     } else if (geojsonType == GeoJSONType::FEATURE_COLLECTION) {
         encodeFeatureCollection(geometry, j);
     }
-    std::string geojson = j.dump();
-    return geojson;
 }
 
 void GeoJSONWriter::encodeFeature(const geom::Geometry* g, nlohmann::ordered_json& j) {

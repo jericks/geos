@@ -146,4 +146,64 @@ void object::test<10>
     ensure_equals(result, "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}}]}");
 }
 
+template<>
+template<>
+void object::test<11>
+()
+{
+    GeomPtr geom(wktreader.read("LINESTRING(102.0 0.0, 103.0 1.0, 104.0 0.0, 105.0 1.0)"));
+    std::string result = geojsonwriter.writeFormatted(geom.get());
+    ensure_equals(result, std::string{"{\n"} +
+        "    \"type\": \"LineString\",\n" +
+        "    \"coordinates\": [\n" +
+        "        [\n" + 
+        "            102.0,\n" + 
+        "            0.0\n" + 
+        "        ],\n" + 
+        "        [\n" + 
+        "            103.0,\n" + 
+        "            1.0\n" + 
+        "        ],\n" + 
+        "        [\n" + 
+        "            104.0,\n" + 
+        "            0.0\n" + 
+        "        ],\n" + 
+        "        [\n" + 
+        "            105.0,\n" + 
+        "            1.0\n" +
+        "        ]\n" + 
+        "    ]\n" +
+        "}");
+}
+
+template<>
+template<>
+void object::test<12>
+()
+{
+    GeomPtr geom(wktreader.read("LINESTRING(102.0 0.0, 103.0 1.0, 104.0 0.0, 105.0 1.0)"));
+    std::string result = geojsonwriter.writeFormatted(geom.get(), 2);
+    ensure_equals(result, std::string{"{\n"} +
+        "  \"type\": \"LineString\",\n" +
+        "  \"coordinates\": [\n" +
+        "    [\n" + 
+        "      102.0,\n" + 
+        "      0.0\n" + 
+        "    ],\n" + 
+        "    [\n" + 
+        "      103.0,\n" + 
+        "      1.0\n" + 
+        "    ],\n" + 
+        "    [\n" + 
+        "      104.0,\n" + 
+        "      0.0\n" + 
+        "    ],\n" + 
+        "    [\n" + 
+        "      105.0,\n" + 
+        "      1.0\n" +
+        "    ]\n" + 
+        "  ]\n" +
+        "}");
+}
+
 }

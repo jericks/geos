@@ -77,7 +77,7 @@ public:
     // Send Geometry's WKT to the given Writer
     //void write(const geom::Geometry* geometry, Writer* writer);
 
-    //std::string writeFormatted(const geom::Geometry* geometry);
+    std::string writeFormatted(const geom::Geometry* geometry, int indent = 4);
 
     //void writeFormatted(const geom::Geometry* geometry, Writer* writer);
 
@@ -88,6 +88,8 @@ private:
     std::pair<double, double> convertCoordinate(const geom::Coordinate* c);
 
     std::vector<std::pair<double, double>> convertCoordinateSequence(const geom::CoordinateSequence* c);
+
+    void encode(const geom::Geometry* g, nlohmann::ordered_json& j);
 
     void encodeGeometry(const geom::Geometry* g, nlohmann::ordered_json& j);
 
