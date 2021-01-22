@@ -81,6 +81,8 @@ private:
 
     std::unique_ptr<geom::Polygon> readPolygon(nlohmann::json& j);
 
+    std::unique_ptr<geom::MultiPoint> readMultiPoint(nlohmann::json& j);
+
 };
 
 } // namespace io

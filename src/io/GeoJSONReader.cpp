@@ -54,6 +54,8 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonTe
         return readLineString(j);
     } else if (type == "Polygon") {
         return readPolygon(j);
+    } else if (type == "MultiPoint") {
+        return readMultiPoint(j);
     }
     return std::unique_ptr<geom::Geometry>(geometryFactory.createEmptyGeometry());
 }
@@ -96,6 +98,16 @@ std::unique_ptr<geom::Polygon> GeoJSONReader::readPolygon(nlohmann::json& j) {
         std::vector<geom::LinearRing *>* innerRings = new std::vector<geom::LinearRing *>(rings.begin() + 1, rings.end());
         return std::unique_ptr<geom::Polygon>(geometryFactory.createPolygon(outerRing, innerRings));        
     }
+}
+
+std::unique_ptr<geom::MultiPoint> GeoJSONReader::readMultiPoint(nlohmann::json& j) {
+    std::vector<std::pair<double,double>> coords = j["coordinates"].get<std::vector<std::pair<double,double>>>();
+    std::vector<geom::Coordinate> coordinates;
+    for(int i = 0; i < coords.size(); i++) {
+        coordinates.push_back(geom::Coordinate{coords[i].first, coords[i].second});
+    }
+    geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
+    return std::unique_ptr<geom::MultiPoint>(geometryFactory.createMultiPoint(coordinateSequence));
 }
 
 } // namespace geos.io
