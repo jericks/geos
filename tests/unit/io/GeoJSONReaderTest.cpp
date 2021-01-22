@@ -94,5 +94,15 @@ void object::test<5>
     ensure_equals("MULTIPOINT (10.000 40.000, 40.000 30.000, 20.000 20.000, 30.000 10.000)", geom->toText());
 }
 
+template<>
+template<>
+void object::test<6>
+()
+{
+    std::string geojson { "{\"type\":\"MultiLineString\",\"coordinates\":[[[10, 10], [20, 20], [10, 40]],[[40, 40], [30, 30], [40, 20], [30, 10]]]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("MULTILINESTRING ((10.000 10.000, 20.000 20.000, 10.000 40.000), (40.000 40.000, 30.000 30.000, 40.000 20.000, 30.000 10.000))", geom->toText());
+}
+
 }
 

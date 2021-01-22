@@ -83,6 +83,8 @@ private:
 
     std::unique_ptr<geom::MultiPoint> readMultiPoint(nlohmann::json& j);
 
+    std::unique_ptr<geom::MultiLineString> readMultiLineString(nlohmann::json& j);
+
 };
 
 } // namespace io
