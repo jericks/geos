@@ -52,6 +52,8 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonTe
         return readPoint(j);
     } else if (type == "LineString") {
         return readLineString(j);
+    } else if (type == "Polygon") {
+        return readPolygon(j);
     }
     return std::unique_ptr<geom::Geometry>(geometryFactory.createEmptyGeometry());
 }
@@ -70,6 +72,30 @@ std::unique_ptr<geom::LineString> GeoJSONReader::readLineString(nlohmann::json& 
     }
     geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
     return std::unique_ptr<geom::LineString>(geometryFactory.createLineString(coordinateSequence));
+}
+
+std::unique_ptr<geom::Polygon> GeoJSONReader::readPolygon(nlohmann::json& j) {
+    std::vector<std::vector<std::pair<double,double>>> polygonCoords = j["coordinates"].get<std::vector<std::vector<std::pair<double,double>>>>();
+    std::vector<geom::LinearRing *> rings;
+    for(int i = 0; i < polygonCoords.size(); i++) {
+        std::vector<geom::Coordinate> coordinates;
+        for (int j = 0; j < polygonCoords[i].size(); j++) {
+            coordinates.push_back(geom::Coordinate{polygonCoords[i][j].first, polygonCoords[i][j].second});
+        }
+        geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
+        rings.push_back(geometryFactory.createLinearRing(std::move(coordinateSequence)));
+    }
+    if (rings.size() == 0) {
+        return std::unique_ptr<geom::Polygon>(geometryFactory.createPolygon(2));
+    } else if (rings.size() == 1) {
+        geom::LinearRing* outerRing = rings[0];
+        std::vector<geom::LinearRing *>* innerRings {};
+        return std::unique_ptr<geom::Polygon>(geometryFactory.createPolygon(outerRing, innerRings));
+    } else {
+        geom::LinearRing* outerRing = rings[0];
+        std::vector<geom::LinearRing *>* innerRings = new std::vector<geom::LinearRing *>(rings.begin() + 1, rings.end());
+        return std::unique_ptr<geom::Polygon>(geometryFactory.createPolygon(outerRing, innerRings));        
+    }
 }
 
 } // namespace geos.io
