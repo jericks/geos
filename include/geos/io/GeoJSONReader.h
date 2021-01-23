@@ -85,6 +85,8 @@ private:
 
     std::unique_ptr<geom::MultiLineString> readMultiLineString(nlohmann::json& j);
 
+    std::unique_ptr<geom::MultiPolygon> readMultiPolygon(nlohmann::json& j);
+
 };
 
 } // namespace io
