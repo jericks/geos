@@ -58,6 +58,8 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonTe
         return readMultiPoint(j);
     } else if (type == "MultiLineString") {
         return readMultiLineString(j);
+    } else if (type == "MultiPolygon") {
+        return readMultiPolygon(j);
     }
     return std::unique_ptr<geom::Geometry>(geometryFactory.createEmptyGeometry());
 }
@@ -124,6 +126,36 @@ std::unique_ptr<geom::MultiLineString> GeoJSONReader::readMultiLineString(nlohma
         lines->push_back(geometryFactory.createLineString(std::move(coordinateSequence)));
     }
     return std::unique_ptr<geom::MultiLineString>(geometryFactory.createMultiLineString(lines));
+}
+
+std::unique_ptr<geom::MultiPolygon> GeoJSONReader::readMultiPolygon(nlohmann::json& j) {
+    std::vector<std::vector<std::vector<std::pair<double,double>>>> multiPolygonCoords = j["coordinates"].get<std::vector<std::vector<std::vector<std::pair<double,double>>>>>();
+    //std::vector<geom::Polygon*> polygons;
+
+    std::vector<geom::Geometry *>* polygons = new std::vector<geom::Geometry *>();
+
+    for(int i = 0; i < multiPolygonCoords.size(); i++) {
+        std::vector<std::vector<std::pair<double,double>>> polygonCoords = multiPolygonCoords[i];
+        std::vector<geom::LinearRing *> rings;
+        for(int j = 0; j < polygonCoords.size(); j++) {
+            std::vector<geom::Coordinate> coordinates;
+            for (int k = 0; k < polygonCoords[j].size(); k++) {
+                coordinates.push_back(geom::Coordinate{polygonCoords[j][k].first, polygonCoords[j][k].second});
+            }
+            geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
+            rings.push_back(geometryFactory.createLinearRing(std::move(coordinateSequence)));
+        }
+        if (rings.size() == 1) {
+            geom::LinearRing* outerRing = rings[0];
+            std::vector<geom::LinearRing *>* innerRings {};
+            polygons->push_back(geometryFactory.createPolygon(outerRing, innerRings));
+        } else {
+            geom::LinearRing* outerRing = rings[0];
+            std::vector<geom::LinearRing *>* innerRings = new std::vector<geom::LinearRing *>(rings.begin() + 1, rings.end());
+            polygons->push_back(geometryFactory.createPolygon(outerRing, innerRings));        
+        }
+    }
+    return std::unique_ptr<geom::MultiPolygon>(geometryFactory.createMultiPolygon(polygons));
 }
 
 } // namespace geos.io
