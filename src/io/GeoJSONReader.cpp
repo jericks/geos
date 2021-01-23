@@ -47,6 +47,10 @@ GeoJSONReader::GeoJSONReader(const geom::GeometryFactory& gf) : geometryFactory(
 
 std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonText) {
     json j = json::parse(geoJsonText);
+    return readGeometry(j);
+}
+
+std::unique_ptr<geom::Geometry> GeoJSONReader::readGeometry(nlohmann::json& j) {
     std::string type = j["type"];
     if (type == "Point") {
         return readPoint(j);
@@ -60,6 +64,8 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonTe
         return readMultiLineString(j);
     } else if (type == "MultiPolygon") {
         return readMultiPolygon(j);
+    } else if (type == "GeometryCollection") {
+        return readGeometryCollection(j);
     }
     return std::unique_ptr<geom::Geometry>(geometryFactory.createEmptyGeometry());
 }
@@ -130,10 +136,7 @@ std::unique_ptr<geom::MultiLineString> GeoJSONReader::readMultiLineString(nlohma
 
 std::unique_ptr<geom::MultiPolygon> GeoJSONReader::readMultiPolygon(nlohmann::json& j) {
     std::vector<std::vector<std::vector<std::pair<double,double>>>> multiPolygonCoords = j["coordinates"].get<std::vector<std::vector<std::vector<std::pair<double,double>>>>>();
-    //std::vector<geom::Polygon*> polygons;
-
     std::vector<geom::Geometry *>* polygons = new std::vector<geom::Geometry *>();
-
     for(int i = 0; i < multiPolygonCoords.size(); i++) {
         std::vector<std::vector<std::pair<double,double>>> polygonCoords = multiPolygonCoords[i];
         std::vector<geom::LinearRing *> rings;
@@ -156,6 +159,16 @@ std::unique_ptr<geom::MultiPolygon> GeoJSONReader::readMultiPolygon(nlohmann::js
         }
     }
     return std::unique_ptr<geom::MultiPolygon>(geometryFactory.createMultiPolygon(polygons));
+}
+
+std::unique_ptr<geom::GeometryCollection> GeoJSONReader::readGeometryCollection(nlohmann::json& j) {
+    std::vector<geom::Geometry *>* geometries = new std::vector<geom::Geometry *>();
+    auto jsonGeometries = j["geometries"];
+    for (auto jsonGeometry : jsonGeometries) {
+        auto g = readGeometry(jsonGeometry);
+        geometries->push_back(g.release());
+    }
+    return std::unique_ptr<geom::GeometryCollection>(geometryFactory.createGeometryCollection(geometries));
 }
 
 } // namespace geos.io
