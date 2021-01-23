@@ -75,6 +75,10 @@ private:
 
     const geom::GeometryFactory& geometryFactory;
 
+    std::unique_ptr<geom::Geometry> readFeature(nlohmann::json& j);
+
+    std::unique_ptr<geom::Geometry> readFeatureCollection(nlohmann::json& j);
+
     std::unique_ptr<geom::Geometry> readGeometry(nlohmann::json& j);
 
     std::unique_ptr<geom::Point> readPoint(nlohmann::json& j);

@@ -47,7 +47,30 @@ GeoJSONReader::GeoJSONReader(const geom::GeometryFactory& gf) : geometryFactory(
 
 std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonText) {
     json j = json::parse(geoJsonText);
-    return readGeometry(j);
+    std::string type = j["type"];
+    if (type == "Feature") {
+        return readFeature(j);    
+    } else if (type == "FeatureCollection") {
+        return readFeatureCollection(j);    
+    } else {
+        return readGeometry(j);
+    }
+}
+
+std::unique_ptr<geom::Geometry> GeoJSONReader::readFeature(nlohmann::json& j) {
+    auto geometryJson = j["geometry"];
+    return readGeometry(geometryJson);
+}
+
+std::unique_ptr<geom::Geometry> GeoJSONReader::readFeatureCollection(nlohmann::json& j) {
+    std::cout << "reading feature collection..." << std::endl;
+    auto featuresJson = j["features"];
+    std::vector<geom::Geometry *>* geometries = new std::vector<geom::Geometry *>();
+    for(auto featureJson : featuresJson) {
+        auto g = readFeature(featureJson);
+        geometries->push_back(g.release());
+    }
+    return std::unique_ptr<geom::GeometryCollection>(geometryFactory.createGeometryCollection(geometries));
 }
 
 std::unique_ptr<geom::Geometry> GeoJSONReader::readGeometry(nlohmann::json& j) {

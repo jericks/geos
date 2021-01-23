@@ -124,5 +124,27 @@ void object::test<8>
     ensure_equals("GEOMETRYCOLLECTION (POINT (40.000 10.000), LINESTRING (10.000 10.000, 20.000 20.000, 10.000 40.000), POLYGON ((40.000 40.000, 20.000 45.000, 45.000 30.000, 40.000 40.000)))", geom->toText());
 }
 
+template<>
+template<>
+void object::test<9>
+()
+{
+    std::string geojson { "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("POINT (-117.000 33.000)", geom->toText());
+
+}
+
+template<>
+template<>
+void object::test<10>
+()
+{
+    std::string geojson { "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}},{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-122.0,45.0]}}]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("GEOMETRYCOLLECTION (POINT (-117.000 33.000), POINT (-122.000 45.000))", geom->toText());
+
+}
+
 }
 
