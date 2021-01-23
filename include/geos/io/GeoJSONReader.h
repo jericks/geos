@@ -75,6 +75,8 @@ private:
 
     const geom::GeometryFactory& geometryFactory;
 
+    std::unique_ptr<geom::Geometry> readGeometry(nlohmann::json& j);
+
     std::unique_ptr<geom::Point> readPoint(nlohmann::json& j);
 
     std::unique_ptr<geom::LineString> readLineString(nlohmann::json& j);
@@ -86,6 +88,8 @@ private:
     std::unique_ptr<geom::MultiLineString> readMultiLineString(nlohmann::json& j);
 
     std::unique_ptr<geom::MultiPolygon> readMultiPolygon(nlohmann::json& j);
+
+    std::unique_ptr<geom::GeometryCollection> readGeometryCollection(nlohmann::json& j);
 
 };
 
