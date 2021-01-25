@@ -146,5 +146,65 @@ void object::test<10>
 
 }
 
+template<>
+template<>
+void object::test<11>
+()
+{
+    std::string geojson { "{\"type\":\"Point\",\"coordinates\":[]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("POINT EMPTY", geom->toText());
+}
+
+template<>
+template<>
+void object::test<12>
+()
+{
+    std::string geojson { "{\"type\":\"LineString\",\"coordinates\":[]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("LINESTRING EMPTY", geom->toText());
+}
+
+template<>
+template<>
+void object::test<13>
+()
+{
+    std::string geojson { "{\"type\":\"Polygon\",\"coordinates\":[]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("POLYGON EMPTY", geom->toText());
+}
+
+template<>
+template<>
+void object::test<14>
+()
+{
+    std::string geojson { "{\"type\":\"MultiPoint\",\"coordinates\":[]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("MULTIPOINT EMPTY", geom->toText());
+}
+
+template<>
+template<>
+void object::test<15>
+()
+{
+    std::string geojson { "{\"type\":\"MultiLineString\",\"coordinates\":[]}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("MULTILINESTRING EMPTY", geom->toText());
+}
+
+template<>
+template<>
+void object::test<16>
+()
+{
+    std::string geojson { "{\"type\": \"MultiPolygon\", \"coordinates\": []}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("MULTIPOLYGON EMPTY", geom->toText());
+}
+
 }
 
