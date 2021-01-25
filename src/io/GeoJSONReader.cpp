@@ -95,8 +95,12 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::readGeometry(nlohmann::json& j) {
 
 std::unique_ptr<geom::Point> GeoJSONReader::readPoint(nlohmann::json& j) {
     std::vector<double> coords = j["coordinates"].get<std::vector<double>>();
-    geom::Coordinate coord = {coords[0], coords[1]};
-    return std::unique_ptr<geom::Point>(geometryFactory.createPoint(coord));
+    if (coords.size() == 0) {
+        return std::unique_ptr<geom::Point>(geometryFactory.createPoint(2));
+    } else {
+        geom::Coordinate coord = {coords[0], coords[1]};
+        return std::unique_ptr<geom::Point>(geometryFactory.createPoint(coord));
+    }
 }
 
 std::unique_ptr<geom::LineString> GeoJSONReader::readLineString(nlohmann::json& j) {
