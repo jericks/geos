@@ -206,5 +206,15 @@ void object::test<16>
     ensure_equals("MULTIPOLYGON EMPTY", geom->toText());
 }
 
+template<>
+template<>
+void object::test<17>
+()
+{
+    std::string geojson { "{\"type\": \"GeometryCollection\",\"geometries\": []}" };
+    GeomPtr geom(geojsonreader.read(geojson));
+    ensure_equals("GEOMETRYCOLLECTION EMPTY", geom->toText());
+}
+
 }
 
