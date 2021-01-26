@@ -59,13 +59,7 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonTe
 
 std::unique_ptr<geom::Geometry> GeoJSONReader::readFeature(nlohmann::json& j) {
     auto geometryJson = j["geometry"];
-    auto geometry = readGeometry(geometryJson);
-    auto properties = j["properties"];
-    std::map<std::string,std::string> map;
-    for(auto prop : properties.items()) {
-        map[prop.key()] = prop.value();
-    }
-    return geometry;
+    return readGeometry(geometryJson);
 }
 
 std::unique_ptr<geom::Geometry> GeoJSONReader::readFeatureCollection(nlohmann::json& j) {
