@@ -18,6 +18,7 @@ libio_la_SOURCES = \
 	Writer.cpp \
 	Unload.cpp \
 	CLocalizer.cpp \
+	GeoJSON.cpp \
 	GeoJSONReader.cpp \
 	GeoJSONWriter.cpp
 

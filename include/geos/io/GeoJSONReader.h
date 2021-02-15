@@ -18,6 +18,7 @@
 
 #include <geos/export.h>
 
+#include <geos/io/GeoJSON.h>
 #include <geos/geom/GeometryFactory.h>
 #include <geos/geom/CoordinateSequence.h>
 #include <geos/geom/Geometry.h>
@@ -71,13 +72,23 @@ public:
     /// Parse a GeoJSON string returning a Geometry
     std::unique_ptr<geom::Geometry> read(const std::string& geoJsonText);
 
+    GeoJSONFeatureCollection readFeatures(const std::string& geoJsonText);
+
 private:
 
     const geom::GeometryFactory& geometryFactory;
 
-    std::unique_ptr<geom::Geometry> readFeature(nlohmann::json& j);
+    std::unique_ptr<geom::Geometry> readFeatureForGeometry(nlohmann::json& j);
 
-    std::unique_ptr<geom::Geometry> readFeatureCollection(nlohmann::json& j);
+    GeoJSONFeature readFeature(nlohmann::json& j);
+
+    std::map<std::string,GeoJSONValue> readProperties(nlohmann::json& p);
+
+    GeoJSONValue readProperty(nlohmann::json& p);
+
+    std::unique_ptr<geom::Geometry> readFeatureCollectionForGeometry(nlohmann::json& j);
+
+    GeoJSONFeatureCollection readFeatureCollection(nlohmann::json& j);
 
     std::unique_ptr<geom::Geometry> readGeometry(nlohmann::json& j);
 
