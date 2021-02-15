@@ -67,19 +67,16 @@ enum class GeoJSONType {
  */
 class GEOS_DLL GeoJSONWriter {
 public:
+    
     GeoJSONWriter() : geojsonType(GeoJSONType::GEOMETRY) {};
+    
     GeoJSONWriter(GeoJSONType type) : geojsonType(type) {};
+    
     ~GeoJSONWriter() = default;
 
-    /// Returns WKT string for the given Geometry
     std::string write(const geom::Geometry* geometry);
 
-    // Send Geometry's WKT to the given Writer
-    //void write(const geom::Geometry* geometry, Writer* writer);
-
     std::string writeFormatted(const geom::Geometry* geometry, int indent = 4);
-
-    //void writeFormatted(const geom::Geometry* geometry, Writer* writer);
 
 private:
 

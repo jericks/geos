@@ -49,29 +49,96 @@ std::unique_ptr<geom::Geometry> GeoJSONReader::read(const std::string& geoJsonTe
     json j = json::parse(geoJsonText);
     std::string type = j["type"];
     if (type == "Feature") {
-        return readFeature(j);    
+        return readFeatureForGeometry(j);    
     } else if (type == "FeatureCollection") {
-        return readFeatureCollection(j);    
+        return readFeatureCollectionForGeometry(j);    
     } else {
         return readGeometry(j);
     }
 }
 
-std::unique_ptr<geom::Geometry> GeoJSONReader::readFeature(nlohmann::json& j) {
-    auto geometryJson = j["geometry"];
-    return readGeometry(geometryJson);
+GeoJSONFeatureCollection GeoJSONReader::readFeatures(const std::string& geoJsonText) {
+    json j = json::parse(geoJsonText);
+    std::string type = j["type"];
+    if (type == "Feature") {
+        auto feature = readFeature(j);    
+        return GeoJSONFeatureCollection { std::vector<GeoJSONFeature>{feature}};
+    } else if (type == "FeatureCollection") {
+        return readFeatureCollection(j);    
+    } else {
+        auto g = readGeometry(j);
+        return GeoJSONFeatureCollection { std::vector<GeoJSONFeature>{GeoJSONFeature{std::move(g), std::map<std::string, GeoJSONValue>{} }}};
+    }
 }
 
-std::unique_ptr<geom::Geometry> GeoJSONReader::readFeatureCollection(nlohmann::json& j) {
-    std::cout << "reading feature collection..." << std::endl;
+std::unique_ptr<geom::Geometry> GeoJSONReader::readFeatureForGeometry(nlohmann::json& j) {
+    auto geometryJson = j["geometry"];
+    auto geometry = readGeometry(geometryJson);
+    return geometry;
+}
+
+GeoJSONFeature GeoJSONReader::readFeature(nlohmann::json& j) {
+    auto geometryJson = j["geometry"];
+    auto geometry = readGeometry(geometryJson);
+    auto properties = j["properties"];
+    std::map<std::string,GeoJSONValue> map = readProperties(properties);    
+    return GeoJSONFeature{ std::move(geometry), map };
+}
+
+std::map<std::string,GeoJSONValue> GeoJSONReader::readProperties(nlohmann::json& p) {
+    std::map<std::string,GeoJSONValue> map;
+    for(auto prop : p.items()) {
+        map[prop.key()] = readProperty(prop.value());
+    }
+    return map;
+}
+
+GeoJSONValue GeoJSONReader::readProperty(nlohmann::json& value) {
+    if (value.is_string()) {
+        return GeoJSONValue::createStringValue(value.get<std::string>());
+    } else if (value.is_number()) {
+        return GeoJSONValue::createNumberValue(value.get<double>());
+    } else if (value.is_boolean()) {
+        return GeoJSONValue::createBooleanValue(value.get<bool>());
+    } else if (value.is_number()) {
+        return GeoJSONValue::createNumberValue(value.get<double>());
+    } else if (value.is_array()) {
+        GeoJSONValue v = GeoJSONValue::createArrayValue();
+        for (auto& el : value.items()) {
+            v.arrayValue.push_back(readProperty(el.value()));
+        }
+        return v;
+    } else if (value.is_object()) {
+        GeoJSONValue v = GeoJSONValue::createObjectValue();
+        for (auto& el : value.items()) {
+            v.objectValue[el.key()] = readProperty(el.value());
+        }
+        return v;
+    } else {
+        return GeoJSONValue::createNullValue();
+    }
+}
+
+std::unique_ptr<geom::Geometry> GeoJSONReader::readFeatureCollectionForGeometry(nlohmann::json& j) {
     auto featuresJson = j["features"];
     std::vector<geom::Geometry *>* geometries = new std::vector<geom::Geometry *>();
     for(auto featureJson : featuresJson) {
-        auto g = readFeature(featureJson);
+        auto g = readFeatureForGeometry(featureJson);
         geometries->push_back(g.release());
     }
     return std::unique_ptr<geom::GeometryCollection>(geometryFactory.createGeometryCollection(geometries));
 }
+
+GeoJSONFeatureCollection GeoJSONReader::readFeatureCollection(nlohmann::json& j) {
+    auto featuresJson = j["features"];
+    std::vector<GeoJSONFeature> features;
+    for(auto featureJson : featuresJson) {
+        auto f = readFeature(featureJson);
+        features.push_back(f);
+    }
+    return GeoJSONFeatureCollection{features};
+}
+
 
 std::unique_ptr<geom::Geometry> GeoJSONReader::readGeometry(nlohmann::json& j) {
     std::string type = j["type"];
