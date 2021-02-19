@@ -91,7 +91,7 @@ class GEOS_DLL GeoJSONFeatureCollection {
 
         GeoJSONFeatureCollection(std::vector<GeoJSONFeature> f);
 
-        std::vector<GeoJSONFeature> getFeatures();
+        std::vector<GeoJSONFeature> getFeatures() const; 
 
     private:
 

@@ -132,7 +132,7 @@ void object::test<9>
 ()
 {
     GeomPtr geom(wktreader.read("POINT(-117 33)"));
-    std::string result = geos::io::GeoJSONWriter(geos::io::GeoJSONType::FEATURE).write(geom.get());
+    std::string result = geojsonwriter.write(geom.get(),geos::io::GeoJSONType::FEATURE);
     ensure_equals(result, "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}}");
 }
 
@@ -142,7 +142,7 @@ void object::test<10>
 ()
 {
     GeomPtr geom(wktreader.read("POINT(-117 33)"));
-    std::string result = geos::io::GeoJSONWriter(geos::io::GeoJSONType::FEATURE_COLLECTION).write(geom.get());
+    std::string result = geojsonwriter.write(geom.get(), geos::io::GeoJSONType::FEATURE_COLLECTION);
     ensure_equals(result, "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]}}]}");
 }
 
@@ -182,7 +182,7 @@ void object::test<12>
 ()
 {
     GeomPtr geom(wktreader.read("LINESTRING(102.0 0.0, 103.0 1.0, 104.0 0.0, 105.0 1.0)"));
-    std::string result = geojsonwriter.writeFormatted(geom.get(), 2);
+    std::string result = geojsonwriter.writeFormatted(geom.get(), geos::io::GeoJSONType::GEOMETRY, 2);
     ensure_equals(result, std::string{"{\n"} +
         "  \"type\": \"LineString\",\n" +
         "  \"coordinates\": [\n" +
@@ -204,6 +204,40 @@ void object::test<12>
         "    ]\n" + 
         "  ]\n" +
         "}");
+}
+
+// Write a Feature
+template<>
+template<>
+void object::test<13>
+()
+{
+    geos::io::GeoJSONFeature feature { wktreader.read("POINT(-117 33)"), std::map<std::string, geos::io::GeoJSONValue> {
+        {"id",   geos::io::GeoJSONValue::createNumberValue(1)     },
+        {"name", geos::io::GeoJSONValue::createStringValue("One") },
+    }};
+    std::string result = geojsonwriter.write(feature);
+    ensure_equals(result, "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]},\"properties\":[1.0,\"One\"]}");
+}
+
+// Write a FeatureCollection
+template<>
+template<>
+void object::test<14>
+()
+{
+    geos::io::GeoJSONFeatureCollection features {{
+        geos::io::GeoJSONFeature { wktreader.read("POINT(-117 33)"), std::map<std::string, geos::io::GeoJSONValue> {
+            {"id",   geos::io::GeoJSONValue::createNumberValue(1)     },
+            {"name", geos::io::GeoJSONValue::createStringValue("One") },
+        }},
+        geos::io::GeoJSONFeature { wktreader.read("POINT(-127 53)"), std::map<std::string, geos::io::GeoJSONValue> {
+            {"id",   geos::io::GeoJSONValue::createNumberValue(2)     },
+            {"name", geos::io::GeoJSONValue::createStringValue("Two") },
+        }}
+    }};
+    std::string result = geojsonwriter.write(features);
+    ensure_equals(result, "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-117.0,33.0]},\"properties\":[1.0,\"One\"]},{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-127.0,53.0]},\"properties\":[2.0,\"Two\"]}]}");
 }
 
 }
