@@ -19,9 +19,9 @@
 
 #include <geos/export.h>
 
+#include "GeoJSON.h"
 #include <string>
 #include <cctype>
-
 #include <json.hpp>
 
 #ifdef _MSC_VER
@@ -68,15 +68,18 @@ enum class GeoJSONType {
 class GEOS_DLL GeoJSONWriter {
 public:
     
-    GeoJSONWriter() : geojsonType(GeoJSONType::GEOMETRY) {};
-    
-    GeoJSONWriter(GeoJSONType type) : geojsonType(type) {};
+    // GeoJSONWriter() : geojsonType(GeoJSONType::GEOMETRY) {};
+    // GeoJSONWriter(GeoJSONType type) : geojsonType(type) {};
     
     ~GeoJSONWriter() = default;
 
-    std::string write(const geom::Geometry* geometry);
+    std::string write(const geom::Geometry* geometry, GeoJSONType type = GeoJSONType::GEOMETRY);
 
-    std::string writeFormatted(const geom::Geometry* geometry, int indent = 4);
+    std::string writeFormatted(const geom::Geometry* geometry, GeoJSONType type = GeoJSONType::GEOMETRY, int indent = 4);
+
+    std::string write(const GeoJSONFeature feature);
+
+    std::string write(const GeoJSONFeatureCollection features);
 
 private:
 
@@ -86,7 +89,7 @@ private:
 
     std::vector<std::pair<double, double>> convertCoordinateSequence(const geom::CoordinateSequence* c);
 
-    void encode(const geom::Geometry* g, nlohmann::ordered_json& j);
+    void encode(const geom::Geometry* g, GeoJSONType type, nlohmann::ordered_json& j);
 
     void encodeGeometry(const geom::Geometry* g, nlohmann::ordered_json& j);
 
@@ -107,6 +110,10 @@ private:
     void encodeFeature(const geom::Geometry* g, nlohmann::ordered_json& j);
 
     void encodeFeatureCollection(const geom::Geometry* g, nlohmann::ordered_json& j);
+
+    void encodeFeature(const GeoJSONFeature feature, nlohmann::ordered_json& j);
+
+    void encodeGeoJSONValue(std::string key, GeoJSONValue value, nlohmann::ordered_json& j);
 
 };
 

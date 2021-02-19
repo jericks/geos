@@ -116,7 +116,7 @@ std::map<std::string, GeoJSONValue> GeoJSONFeature::getProperties() const {
 
 GeoJSONFeatureCollection::GeoJSONFeatureCollection(std::vector<GeoJSONFeature> f) : features(f) {};
 
-std::vector<GeoJSONFeature> GeoJSONFeatureCollection::getFeatures() {
+std::vector<GeoJSONFeature> GeoJSONFeatureCollection::getFeatures() const {
     return features;
 }
 

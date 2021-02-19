@@ -41,21 +41,94 @@ using json = nlohmann::ordered_json;
 namespace geos {
 namespace io { // geos.io
 
-std::string GeoJSONWriter::write(const geom::Geometry* geometry) {
+std::string GeoJSONWriter::write(const geom::Geometry* geometry, GeoJSONType type) {
     json j;
-    encode(geometry, j);
+    encode(geometry, type, j);
     std::string geojson = j.dump();
     return geojson;
 }
 
-std::string GeoJSONWriter::writeFormatted(const geom::Geometry* geometry, int indent) {
+std::string GeoJSONWriter::writeFormatted(const geom::Geometry* geometry, GeoJSONType type, int indent) {
     json j;
-    encode(geometry, j);
+    encode(geometry, type, j);
     std::string geojson = j.dump(indent);
     return geojson;
 }
 
-void GeoJSONWriter::encode(const geom::Geometry* geometry, nlohmann::ordered_json& j) {
+std::string GeoJSONWriter::write(const GeoJSONFeature feature) {
+    json j;
+    encodeFeature(feature, j);
+    std::string geojson = j.dump();
+    return geojson;
+}
+
+void GeoJSONWriter::encodeGeoJSONValue(std::string key, GeoJSONValue value, nlohmann::ordered_json& j) {
+    if (value.type == GeoJSONValueType::NUMBER) {
+        if (j.is_object()) {
+            j[key] = value.numberValue;
+        } else {
+            j.push_back(value.numberValue);
+        }
+    } else if (value.type == GeoJSONValueType::STRING) {
+        if (j.is_object()) {
+            j[key] = value.stringValue;
+        } else {
+            j.push_back(value.stringValue);
+        }
+    } else if (value.type == GeoJSONValueType::BOOLEAN) {
+        if (j.is_object()) {
+            j[key] = value.booleanValue;
+        } else {
+            j.push_back(value.booleanValue);
+        }
+    } else if (value.type == GeoJSONValueType::NULLTYPE) {
+        if (j.is_object()) {
+            j[key] = nullptr;
+        } else {
+            j.push_back(nullptr);
+        }
+    } else if (value.type == GeoJSONValueType::ARRAY) {
+        j[key] = json::array();
+        for (GeoJSONValue v : value.arrayValue) {
+            encodeGeoJSONValue("", v, j[key]);
+        }
+    } else if (value.type == GeoJSONValueType::OBJECT) {
+        j[key] = json::object();
+        for (auto entry : value.objectValue) {
+            encodeGeoJSONValue(entry.first, entry.second, j[key]);
+        }
+    }
+}
+
+std::string GeoJSONWriter::write(const GeoJSONFeatureCollection features) {
+    json j;
+    j["type"] = "FeatureCollection";
+    json featuresJson = json::array();
+    for(auto const feature : features.getFeatures()) {
+        json j;
+        encodeFeature(feature, j);
+        featuresJson.push_back(j);
+    }
+    j["features"] = featuresJson;
+    std::string geojson = j.dump();
+    return geojson;
+}
+
+void GeoJSONWriter::encodeFeature(const GeoJSONFeature feature, nlohmann::ordered_json& j) {
+    j["type"] = "Feature";
+    json geometryJson;
+    encodeGeometry(feature.getGeometry(), geometryJson);
+    j["geometry"] = geometryJson;
+    json propertiesJson;
+    for(auto property : feature.getProperties()) {
+        std::string key = property.first;
+        GeoJSONValue value = property.second;
+        encodeGeoJSONValue(key, value, propertiesJson);
+    }
+    j["properties"] = propertiesJson;
+}
+
+void GeoJSONWriter::encode(const geom::Geometry* geometry, GeoJSONType geojsonType, nlohmann::ordered_json& j) {
     if(geojsonType == GeoJSONType::GEOMETRY) {
         encodeGeometry(geometry, j);
     } else if (geojsonType == GeoJSONType::FEATURE) {
