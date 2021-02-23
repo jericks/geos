@@ -18,6 +18,8 @@
  *
  **********************************************************************/
 
+#include <math.h>
+
 #include <geos/geom/util/Densifier.h>
 #include <geos/geom/CoordinateSequenceFactory.h>
 #include <geos/geom/CoordinateList.h>
@@ -91,6 +93,8 @@ Densifier::DensifyTransformer::transformMultiPolygon(const MultiPolygon* geom, c
 std::unique_ptr<Geometry>
 Densifier::DensifyTransformer::createValidArea(const Geometry* roughAreaGeom)
 {
+    if (roughAreaGeom->isValid())
+        return Geometry::Ptr(roughAreaGeom->clone());
     return roughAreaGeom->buffer(0.0);
 }
 
@@ -111,7 +115,8 @@ Densifier::densifyPoints(const Coordinate::Vect pts, double distanceTolerance, c
         seg.p1 = *(it + 1);
         coordList.insert(coordList.end(), seg.p0, false);
         double len = seg.getLength();
-        int densifiedSegCount = (int)(len / distanceTolerance) + 1;
+
+        int densifiedSegCount = (int)(ceil(len / distanceTolerance));
         if(densifiedSegCount > 1) {
             double densifiedSegLen = len / densifiedSegCount;
             for(int j = 1; j < densifiedSegCount; j++) {
@@ -121,6 +126,10 @@ Densifier::densifyPoints(const Coordinate::Vect pts, double distanceTolerance, c
                 precModel->makePrecise(p);
                 coordList.insert(coordList.end(), p, false);
             }
+        }
+        else {
+            // no densification required; insert the last coordinate and continue
+            coordList.insert(coordList.end(), seg.p1, false);
         }
     }
     coordList.insert(coordList.end(), pts[pts.size() - 1], false);
@@ -155,6 +164,10 @@ Densifier::setDistanceTolerance(double tol)
 Geometry::Ptr
 Densifier::getResultGeometry() const
 {
+    if (inputGeom->isEmpty()) {
+        return inputGeom->clone();
+    }
+
     DensifyTransformer dt(distanceTolerance);
     return dt.transform(inputGeom);
 }

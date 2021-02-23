@@ -35,6 +35,7 @@
 #include <geos/geom/Envelope.h>
 #include <geos/geom/Location.h>
 #include <geos/geom/Geometry.h>
+#include <geos/util/Interrupt.h>
 
 #include <algorithm>
 
@@ -211,6 +212,8 @@ OverlayNG::computeEdgeOverlay()
      */
     EdgeNodingBuilder nodingBuilder(pm, noder);
 
+    GEOS_CHECK_FOR_INTERRUPTS();
+
     if (isOptimized) {
         Envelope clipEnv;
         bool gotClipEnv = OverlayUtil::clippingEnvelope(opCode, &inputGeom, pm, clipEnv);
@@ -222,6 +225,8 @@ OverlayNG::computeEdgeOverlay()
     std::vector<Edge*> edges = nodingBuilder.build(
         inputGeom.getGeometry(0),
         inputGeom.getGeometry(1));
+
+    GEOS_CHECK_FOR_INTERRUPTS();
 
     /**
      * Record if an input geometry has collapsed.
@@ -249,6 +254,7 @@ OverlayNG::computeEdgeOverlay()
         return OverlayUtil::toLines(&graph, isOutputEdges, geomFact);
     }
 
+    GEOS_CHECK_FOR_INTERRUPTS();
     labelGraph(&graph);
 
     // std::cout << std::endl << graph << std::endl;
@@ -257,6 +263,7 @@ OverlayNG::computeEdgeOverlay()
         return OverlayUtil::toLines(&graph, isOutputEdges, geomFact);
     }
 
+    GEOS_CHECK_FOR_INTERRUPTS();
     return extractResult(opCode, &graph);
 }
 
@@ -286,11 +293,12 @@ OverlayNG::extractResult(int p_opCode, OverlayGraph* graph)
     std::vector<OverlayEdge*> resultAreaEdges = graph->getResultAreaEdges();
     PolygonBuilder polyBuilder(resultAreaEdges, geomFact);
     std::vector<std::unique_ptr<Polygon>> resultPolyList = polyBuilder.getPolygons();
-    bool hasResultAreaComponents = resultPolyList.size() > 0;
+    bool hasResultAreaComponents = (!resultPolyList.empty());
 
     std::vector<std::unique_ptr<LineString>> resultLineList;
     std::vector<std::unique_ptr<Point>> resultPointList;
 
+    GEOS_CHECK_FOR_INTERRUPTS();
     if (!isAreaResultOnly) {
         //--- Build lines
         bool allowResultLines = !hasResultAreaComponents ||
@@ -308,7 +316,7 @@ OverlayNG::extractResult(int p_opCode, OverlayGraph* graph)
          * Only an intersection op can produce point results
          * from non-point inputs.
          */
-        bool hasResultComponents = hasResultAreaComponents || resultLineList.size() > 0;
+        bool hasResultComponents = hasResultAreaComponents || (!resultLineList.empty());
         bool allowResultPoints = ! hasResultComponents || isAllowMixedIntResult;
         if (opCode == INTERSECTION && allowResultPoints) {
             IntersectionPointBuilder pointBuilder(graph, geomFact);
@@ -317,9 +325,9 @@ OverlayNG::extractResult(int p_opCode, OverlayGraph* graph)
         }
     }
 
-    if (resultPolyList.size() == 0 &&
-        resultLineList.size() == 0 &&
-        resultPointList.size() == 0)
+    if (resultPolyList.empty() &&
+        resultLineList.empty() &&
+        resultPointList.empty())
     {
         return createEmptyResult();
     }

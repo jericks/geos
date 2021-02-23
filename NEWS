@@ -2,9 +2,16 @@ Changes in 3.10.0
 2020-xx-xx
 
 - New things:
-  - Output WKT using positional precision with the ryu 
+  - Output WKT using positional precision with the ryu
     library (#868, Paul Ramsey)
+  - geosop CLI for GEOS (Martin Davis)
+  - Full doxygen of the C-API (Paul Ramsey)
+  - CAPI: GEOSDensify (Brendan Ward)
 
+- Fixes/Improvements:
+  - Preserve ordering of lines in overlay results (Martin Davis)
+  - Check for invalid geometry before fixing polygonal result in Densifier and DPSimplifier (Martin Davis)
+  - Fix overlay handling of flat interior lines (JTS-685, Martin Davis)
 
 Changes in 3.9.0
 2020-12-09
@@ -19,7 +26,7 @@ Changes in 3.9.0
   - SimpleSTRTree spatial index implementation (Paul Ramsey)
   - Add support for pkg-config for GEOS C API (#1073, Mike Taves)
 
-- Improvements:
+- Fixes/Improvements:
   - Stack allocate segments in OverlapUnion (Paul Ramsey)
   - Improve performance of GEOSisValid (Dan Baston)
   - Update geos-config tool for consistency
@@ -724,4 +731,3 @@ Changes in 2.0.0
   been dropped. You have to use GeometryFactory instead.
 - WKTWriter default constructor has been dropped. You need
   to initialize it with an explicit GeometryFactory
-

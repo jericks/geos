@@ -16,13 +16,16 @@ steps:
     image: *test-image
     pull: always
     commands:
-      - ./autogen.sh
-      - CXXFLAGS="-O0" ./configure
+      - mkdir build
+      - cd build
+      - cmake --version
+      - CXXFLAGS="-O0" cmake ..
       - make V=0
   - name: check
     image: *test-image
     commands:
-      - CXXFLAGS="-O0" make check V=0
+      - cd build
+      - ctest --output-on-failure .
   # - name: docs
   #   image: *test-image
   #   commands:

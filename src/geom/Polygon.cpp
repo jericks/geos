@@ -191,6 +191,13 @@ Polygon::getExteriorRing() const
     return shell.get();
 }
 
+std::unique_ptr<LinearRing>
+Polygon::releaseExteriorRing()
+{
+    envelope.reset();
+    return std::move(shell);
+}
+
 size_t
 Polygon::getNumInteriorRing() const
 {
@@ -201,6 +208,12 @@ const LinearRing*
 Polygon::getInteriorRingN(std::size_t n) const
 {
     return holes[n].get();
+}
+
+std::vector<std::unique_ptr<LinearRing>>
+Polygon::releaseInteriorRings()
+{
+    return std::move(holes);
 }
 
 std::string
@@ -313,6 +326,7 @@ Polygon::convexHull() const
     return getExteriorRing()->convexHull();
 }
 
+
 void
 Polygon::normalize()
 {
@@ -329,7 +343,30 @@ int
 Polygon::compareToSameClass(const Geometry* g) const
 {
     const Polygon* p = dynamic_cast<const Polygon*>(g);
-    return shell->compareToSameClass(p->shell.get());
+    int shellComp = shell->compareToSameClass(p->shell.get());
+    if (shellComp != 0) {
+        return shellComp;
+    }
+
+    size_t nHole1 = getNumInteriorRing();
+    size_t nHole2 = p->getNumInteriorRing();
+    if (nHole1 < nHole2) {
+        return -1;
+    }
+    if (nHole1 > nHole2) {
+        return 1;
+    }
+
+    int holeComp = 0;
+    for (size_t i=0; i < nHole1; i++) {
+        const LinearRing *lr = p->getInteriorRingN(i);
+        holeComp = getInteriorRingN(i)->compareToSameClass(lr);
+        if (holeComp != 0) {
+            return holeComp;
+        }
+    }
+
+    return 0;
 }
 
 /*
@@ -487,7 +524,7 @@ Polygon::isRectangle() const
     // check vertices are in right order
     double prevX = seq.getX(0);
     double prevY = seq.getY(0);
-    for(int i = 1; i <= 4; i++) {
+    for(uint32_t i = 1; i <= 4; i++) {
         double x = seq.getX(i);
         double y = seq.getY(i);
         bool xChanged = (x != prevX);

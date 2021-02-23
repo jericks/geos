@@ -110,11 +110,31 @@ public:
     /// Returns the exterior ring (shell)
     const LinearRing* getExteriorRing() const;
 
+    /**
+     * \brief
+     * Take ownership of this Polygon's exterior ring.
+     * After releasing the exterior ring, the Polygon should be
+     * considered in a moved-from state and should not be accessed,
+     * except to release the interior rings (if desired.)
+     * @return exterior ring
+     */
+    std::unique_ptr<LinearRing> releaseExteriorRing();
+
     /// Returns number of interior rings (hole)
     std::size_t getNumInteriorRing() const;
 
     /// Get nth interior ring (hole)
     const LinearRing* getInteriorRingN(std::size_t n) const;
+
+    /**
+     * \brief
+     * Take ownership of this Polygon's interior rings.
+     * After releasing the rings, the Polygon should be
+     * considered in a moved-from state and should not be accessed,
+     * except to release the exterior ring (if desired.)
+     * @return vector of rings (may be empty)
+     */
+    std::vector<std::unique_ptr<LinearRing>> releaseInteriorRings();
 
     std::string getGeometryType() const override;
     GeometryTypeId getGeometryTypeId() const override;
@@ -134,8 +154,6 @@ public:
 
     std::unique_ptr<Geometry> reverse() const override;
 
-    int compareToSameClass(const Geometry* p) const override; //was protected
-
     const Coordinate* getCoordinate() const override;
 
     double getArea() const override;
@@ -149,6 +167,8 @@ protected:
 
 
     Polygon(const Polygon& p);
+
+    int compareToSameClass(const Geometry* p) const override;
 
     /**
      * Constructs a <code>Polygon</code> with the given exterior

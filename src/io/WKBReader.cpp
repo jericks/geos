@@ -67,7 +67,7 @@ WKBReader::printHEX(std::istream& is, std::ostream& os)
 
     char each = 0;
     while(is.read(&each, 1)) {
-        const unsigned char c = each;
+        const unsigned char c = static_cast<unsigned char>(each);
         int low = (c & 0x0F);
         int high = (c >> 4);
         os << hex[high] << hex[low];
@@ -157,7 +157,7 @@ WKBReader::readHEX(std::istream& is)
         const unsigned char result_low = ASCIIHexToUChar(low);
 
         const unsigned char value =
-            static_cast<char>((result_high << 4) + result_low);
+            static_cast<unsigned char>((result_high << 4) + result_low);
 
 #if DEBUG_HEX_READER
         std::size_t << "HEX " << high << low << " -> DEC " << (int)value << std::endl;
@@ -170,6 +170,45 @@ WKBReader::readHEX(std::istream& is)
     return this->read(os);
 }
 
+void
+WKBReader::minMemSize(int geomType, uint64_t size)
+{
+    uint64_t minMemSize = 0;
+    constexpr uint64_t minCoordSize = 2 * sizeof(double);
+    constexpr uint64_t minPtSize = (1+4) + minCoordSize;
+    constexpr uint64_t minLineSize = (1+4+4); // empty line
+    constexpr uint64_t minRingSize = 4; // empty ring
+    constexpr uint64_t minPolySize = (1+4+4); // empty polygon
+    constexpr uint64_t minGeomSize = minLineSize;
+
+    switch(geomType) {
+        case GEOS_LINESTRING:
+        case GEOS_LINEARRING:
+            minMemSize = size * minCoordSize;
+            break;
+        case GEOS_POLYGON:
+            minMemSize = size * minRingSize;
+            break;
+        case GEOS_MULTIPOINT:
+            minMemSize = size * minPtSize;
+            break;
+        case GEOS_MULTILINESTRING:
+            minMemSize = size * minLineSize;
+            break;
+        case GEOS_MULTIPOLYGON:
+            minMemSize = size * minPolySize;
+            break;
+        case GEOS_GEOMETRYCOLLECTION:
+            minMemSize = size * minGeomSize;
+            break;
+    }
+
+    if (dis.size() < minMemSize) {
+        throw ParseException("Input buffer is smaller than requested object size");
+    }
+}
+
+
 std::unique_ptr<Geometry>
 WKBReader::read(std::istream& is)
 {
@@ -177,7 +216,7 @@ WKBReader::read(std::istream& is)
     auto size = is.tellg();
     is.seekg(0, std::ios::beg);
 
-    std::vector<unsigned char> buf(size);
+    std::vector<unsigned char> buf(static_cast<size_t>(size));
     is.read((char*) buf.data(), size);
 
     return read(buf.data(), buf.size());
@@ -208,13 +247,13 @@ WKBReader::readGeometry()
         dis.setOrder(ByteOrderValues::ENDIAN_BIG);
     }
 
-    int typeInt = dis.readInt();
+    uint32_t typeInt = dis.readUnsigned();
     /* Pick up both ISO and SFSQL geometry type */
-    int geometryType = (typeInt & 0xffff) % 1000;
+    uint32_t geometryType = (typeInt & 0xffff) % 1000;
     /* ISO type range 1000 is Z, 2000 is M, 3000 is ZM */
-    int isoTypeRange = (typeInt & 0xffff) / 1000;
-    int isoHasZ = (isoTypeRange == 1) || (isoTypeRange == 3);
-    int isoHasM = (isoTypeRange == 2) || (isoTypeRange == 3);
+    uint32_t isoTypeRange = (typeInt & 0xffff) / 1000;
+    bool isoHasZ = (isoTypeRange == 1) || (isoTypeRange == 3);
+    bool isoHasM = (isoTypeRange == 2) || (isoTypeRange == 3);
     /* SFSQL high bit flag for Z, next bit for M */
     int sfsqlHasZ = (typeInt & 0x80000000) != 0;
     int sfsqlHasM = (typeInt & 0x40000000) != 0;
@@ -309,7 +348,8 @@ WKBReader::readPoint()
 std::unique_ptr<LineString>
 WKBReader::readLineString()
 {
-    int size = dis.readInt();
+    uint32_t size = dis.readUnsigned();
+    minMemSize(GEOS_LINESTRING, size);
 #if DEBUG_WKB_READER
     std::size_t << "WKB npoints: " << size << std::endl;
 #endif
@@ -320,7 +360,8 @@ WKBReader::readLineString()
 std::unique_ptr<LinearRing>
 WKBReader::readLinearRing()
 {
-    int size = dis.readInt();
+    uint32_t size = dis.readUnsigned();
+    minMemSize(GEOS_LINEARRING, size);
 #if DEBUG_WKB_READER
     std::size_t << "WKB npoints: " << size << std::endl;
 #endif
@@ -331,7 +372,8 @@ WKBReader::readLinearRing()
 std::unique_ptr<Polygon>
 WKBReader::readPolygon()
 {
-    int numRings = dis.readInt();
+    uint32_t numRings = dis.readUnsigned();
+    minMemSize(GEOS_POLYGON, numRings);
 
 #if DEBUG_WKB_READER
     std::size_t << "WKB numRings: " << numRings << std::endl;
@@ -348,7 +390,7 @@ WKBReader::readPolygon()
 
     if(numRings > 1) {
         std::vector<std::unique_ptr<LinearRing>> holes(numRings - 1);
-        for(int i = 0; i < numRings - 1; i++) {
+        for(uint32_t i = 0; i < numRings - 1; i++) {
             holes[i] = readLinearRing();
         }
 
@@ -360,10 +402,11 @@ WKBReader::readPolygon()
 std::unique_ptr<MultiPoint>
 WKBReader::readMultiPoint()
 {
-    int numGeoms = dis.readInt();
+    uint32_t numGeoms = dis.readUnsigned();
+    minMemSize(GEOS_MULTIPOINT, numGeoms);
     std::vector<std::unique_ptr<Geometry>> geoms(numGeoms);
 
-    for(int i = 0; i < numGeoms; i++) {
+    for(uint32_t i = 0; i < numGeoms; i++) {
         geoms[i] = readGeometry();
         if(!dynamic_cast<Point*>(geoms[i].get())) {
             std::stringstream err;
@@ -378,10 +421,11 @@ WKBReader::readMultiPoint()
 std::unique_ptr<MultiLineString>
 WKBReader::readMultiLineString()
 {
-    int numGeoms = dis.readInt();
+    uint32_t numGeoms = dis.readUnsigned();
+    minMemSize(GEOS_MULTILINESTRING, numGeoms);
     std::vector<std::unique_ptr<Geometry>> geoms(numGeoms);
 
-    for(int i = 0; i < numGeoms; i++) {
+    for(uint32_t i = 0; i < numGeoms; i++) {
         geoms[i] = readGeometry();
         if(!dynamic_cast<LineString*>(geoms[i].get())) {
             std::stringstream err;
@@ -396,10 +440,11 @@ WKBReader::readMultiLineString()
 std::unique_ptr<MultiPolygon>
 WKBReader::readMultiPolygon()
 {
-    int numGeoms = dis.readInt();
+    uint32_t numGeoms = dis.readUnsigned();
+    minMemSize(GEOS_MULTIPOLYGON, numGeoms);
     std::vector<std::unique_ptr<Geometry>> geoms(numGeoms);
 
-    for(int i = 0; i < numGeoms; i++) {
+    for(uint32_t i = 0; i < numGeoms; i++) {
         geoms[i] = readGeometry();
         if(!dynamic_cast<Polygon*>(geoms[i].get())) {
             std::stringstream err;
@@ -414,10 +459,11 @@ WKBReader::readMultiPolygon()
 std::unique_ptr<GeometryCollection>
 WKBReader::readGeometryCollection()
 {
-    int numGeoms = dis.readInt();
+    uint32_t numGeoms = dis.readUnsigned();
+    minMemSize(GEOS_GEOMETRYCOLLECTION, numGeoms);
     std::vector<std::unique_ptr<Geometry>> geoms(numGeoms);
 
-    for(int i = 0; i < numGeoms; i++) {
+    for(uint32_t i = 0; i < numGeoms; i++) {
         geoms[i] = readGeometry();
     }
 
@@ -425,14 +471,15 @@ WKBReader::readGeometryCollection()
 }
 
 std::unique_ptr<CoordinateSequence>
-WKBReader::readCoordinateSequence(int size)
+WKBReader::readCoordinateSequence(uint32_t size)
 {
+    minMemSize(GEOS_LINESTRING, size);
     unsigned int targetDim = 2 + (hasZ ? 1 : 0);
     auto seq = factory.getCoordinateSequenceFactory()->create(size, targetDim);
     if(targetDim > inputDimension) {
         targetDim = inputDimension;
     }
-    for(int i = 0; i < size; i++) {
+    for(uint32_t i = 0; i < size; i++) {
         readCoordinate();
         for(unsigned int j = 0; j < targetDim; j++) {
             seq->setOrdinate(i, j, ordValues[j]);

@@ -13,18 +13,11 @@
  **********************************************************************/
 
 #include <geos/operation/overlayng/EdgeKey.h>
-#include <geos/geom/Dimension.h>
-#include <geos/geom/CoordinateSequence.h>
 
 
 namespace geos {      // geos
 namespace operation { // geos.operation
 namespace overlayng { // geos.operation.overlayng
-
-EdgeKey::EdgeKey(const Edge* edge)
-{
-    initPoints(edge);
-}
 
 } // namespace geos.operation.overlayng
 } // namespace geos.operation

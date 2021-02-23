@@ -26,7 +26,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # TODO: Follow CMake detection of git and version tagging
 #       https://gitlab.kitware.com/cmake/cmake/blob/master/Source/CMakeVersionSource.cmake
-if(EXISTS ${CMAKE_SOURCE_DIR}/.git/HEAD)
+if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
   set(GEOS_BUILD_FROM_GIT ON)
 endif()
 
@@ -48,6 +48,7 @@ option(BUILD_SHARED_LIBS "Build GEOS with shared libraries" ON)
 set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ standard version to use (default is 11)")
 
 ## GEOS custom variables
+option(BUILD_BENCHMARKS "Build GEOS benchmarks" ON)
 cmake_dependent_option(GEOS_BUILD_DEVELOPER
   "Build with compilation flags useful for development" ON
   "GEOS_BUILD_FROM_GIT" OFF)
@@ -168,6 +169,11 @@ target_compile_options(geos_cxx_flags INTERFACE
 	"$<$<CXX_COMPILER_ID:MSVC>:/fp:precise>"
 	)
 
+# Use -ffloat-store for 32-bit builds (needed to make some tests pass)
+target_compile_options(geos_cxx_flags INTERFACE
+  $<$<AND:$<CXX_COMPILER_ID:GNU>,$<EQUAL:4,${CMAKE_SIZEOF_VOID_P}>>:-ffloat-store>
+)
+
 #-----------------------------------------------------------------------------
 # Target geos_cxx_flags: common compilation flags
 #-----------------------------------------------------------------------------
@@ -180,6 +186,11 @@ else()
   message(STATUS
     "GEOS: Function inlining DISABLED")
 endif()
+
+# Make sure NDEBUG is defined so that assert() is disabled for
+# any non-debug build. Use a generator expression so that this
+# works with multi-configuration generators.
+target_compile_definitions(geos_cxx_flags INTERFACE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>)
 
 #-----------------------------------------------------------------------------
 # Target geos_cxx_flags: overlayng code
@@ -282,7 +293,9 @@ endif()
 #-----------------------------------------------------------------------------
 # Benchmarks
 #-----------------------------------------------------------------------------
-add_subdirectory(benchmarks)
+if(BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
 
 #-----------------------------------------------------------------------------
 # Utils
@@ -298,6 +311,7 @@ add_subdirectory(doc)
 # Install and export targets - support 'make install' or equivalent
 #-----------------------------------------------------------------------------
 include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/geos-config-version.cmake"
@@ -310,43 +324,43 @@ configure_file(cmake/geos-config.cmake
 
 install(TARGETS geos geos_cxx_flags
   EXPORT geos-targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
 install(TARGETS geos_c
   EXPORT geos-targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
 install(EXPORT geos-targets
   FILE geos-targets.cmake
   NAMESPACE GEOS::
-  DESTINATION lib/cmake/GEOS)
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GEOS)
 
 install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/geos-config.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/geos-config-version.cmake"
-  DESTINATION lib/cmake/GEOS)
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GEOS)
 install(DIRECTORY
   "${CMAKE_CURRENT_LIST_DIR}/include/geos"
   "${CMAKE_CURRENT_BINARY_DIR}/include/geos"
-  DESTINATION include
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.h")
 if(NOT DISABLE_GEOS_INLINE)
   install(DIRECTORY
     "${CMAKE_CURRENT_LIST_DIR}/include/geos"
     "${CMAKE_CURRENT_BINARY_DIR}/include/geos"
-    DESTINATION include
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.inl")
 endif()
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/capi/geos_c.h"
-  DESTINATION include)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 add_subdirectory(tools)
 

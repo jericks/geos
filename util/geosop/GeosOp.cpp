@@ -57,6 +57,15 @@ void showHelp() {
     std::cout << "Usage: geosop [wktfile] opname args..." << std::endl;
 }
 
+static bool startsWith(const std::string& s, const std::string& prefix) {
+    return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
+}
+
+static bool endsWith(const std::string& str, const std::string& suffix)
+{
+    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+}
+
 int main(int argc, char** argv) {
     GeomFunction::init();
 
@@ -68,10 +77,11 @@ int main(int argc, char** argv) {
         ("b", "source for B geometries (WKT, WKB, file, stdin, stdin.wkb)", cxxopts::value<std::string>( cmdArgs.srcB ))
         ("alimit", "Limit nunber of A geometries read", cxxopts::value<int>( cmdArgs.limitA ))
         ("c,collect", "Collect input into single geometry", cxxopts::value<bool>( cmdArgs.isCollect ))
-        ("e,explode", "Explode result", cxxopts::value<bool>( cmdArgs.isExplode))
-        ("f,format", "Output format", cxxopts::value<std::string>( ))
+        ("e,explode", "Explode results into conponent geometris", cxxopts::value<bool>( cmdArgs.isExplode))
+        ("f,format", "Output format (wkt, wkb or txt)", cxxopts::value<std::string>( ))
         ("h,help", "Print help")
-        ("p,precision", "Sets number of decimal places in WKT output", cxxopts::value<int>( cmdArgs.precision ) )
+        ("p,precision", "Sets number of decimal places in output coordinates", cxxopts::value<int>( cmdArgs.precision ) )
+        ("r,repeat", "Repeat operation N times", cxxopts::value<int>( cmdArgs.repeatNum ) )
         ("t,time", "Print execution time", cxxopts::value<bool>( cmdArgs.isShowTime ) )
         ("v,verbose", "Verbose output", cxxopts::value<bool>( cmdArgs.isVerbose )->default_value("false"))
 
@@ -83,12 +93,14 @@ int main(int argc, char** argv) {
     auto result = options.parse(argc, argv);
 
     if (argc <= 1 || result.count("help")) {
-        if (result.count("help")) {
-            std::cout << "geosop - GEOS v. " << geosversion() << std::endl;
-        }
+        std::cout << "geosop - GEOS " << geosversion() << std::endl;
+        options.positional_help("opName opArg");
         std::cout << options.help() << std::endl;
         //showHelp();
         if (result.count("help")) {
+            std::cout << "Notes:" << std::endl;
+            std::cout << "- Negative numeric op arguments can be specified with leading N:  e.g. N-0.1" << std::endl;
+            std::cout << std::endl;
             std::cout << "Operations:" << std::endl;
             std::vector<std::string> ops = GeomFunction::list();
             for (auto opName : ops) {
@@ -122,9 +134,17 @@ int main(int argc, char** argv) {
         auto& v = result["opArgs"].as<std::vector<std::string>>();
         if (v.size() >= 1) {
             auto val = v[0];
+            /**
+             * To get around cmdline parset limitation for parsing neg numbers,
+             * allow syntax "Nnum" as well
+             */
+            if (startsWith(val, "N")) {
+                val = val.substr(1, val.size()-1);
+            }
             cmdArgs.opArg1 = std::stod(val);
         }
     }
+
     GeosOp geosop(cmdArgs);
     geosop.run();
 }
@@ -137,7 +157,7 @@ GeosOp::GeosOp(GeosOpArgs& arg)
 GeosOp::~GeosOp() {
 }
 
-std::string timeFormatted(int n)
+std::string formatNum(int n)
 {
     auto fmt = std::to_string(n);
     int insertPosition = static_cast<int>(fmt.length()) - 3;
@@ -145,16 +165,7 @@ std::string timeFormatted(int n)
         fmt.insert(insertPosition, ",");
         insertPosition-=3;
     }
-    return fmt + " usec";
-}
-
-static bool startsWith(const std::string& s, const std::string& prefix) {
-    return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
-}
-
-static bool endsWith(const std::string& str, const std::string& suffix)
-{
-    return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+    return fmt ;
 }
 
 std::vector<std::unique_ptr<Geometry>> collect( std::vector<std::unique_ptr<Geometry>>& geoms ) {
@@ -271,8 +282,8 @@ GeosOp::readInput(std::string name, std::string src, int limit) {
 }
 
 std::string geomStats(int geomCount, int geomVertices) {
-    return std::to_string(geomCount) + " geometries, "
-        + std::to_string(geomVertices) + " vertices";
+    return formatNum( geomCount) + " geometries, "
+        + formatNum( geomVertices) + " vertices";
 
 }
 std::string summaryStats(std::vector<std::unique_ptr<Geometry>>& geoms) {
@@ -296,11 +307,13 @@ GeosOp::loadInput(std::string name, std::string src, int limit) {
     auto geoms = readInput( name, src, limit );
     sw.stop();
     auto stats = summaryStats(geoms);
-    log("Read " + stats  + "  -- " + timeFormatted( sw.getTot() ));
+    log("Read " + stats  + "  -- " + formatNum( sw.getTot() ) + " usec");
     return geoms;
 }
 
 void GeosOp::run() {
+    // ensure at least one op processed
+    if (args.repeatNum < 1) args.repeatNum = 1;
 
     auto geomsLoadA = loadInput("A", args.srcA, args.limitA);
 
@@ -320,9 +333,10 @@ void GeosOp::run() {
 
     if (args.isShowTime || args.isVerbose) {
         std::cout
-            << "Processed " <<  opCount << " " << args.opName << " ops ( "
-            << vertexCount << " vertices)"
-            << "  -- " << timeFormatted( totalTime )
+            << "Ran " <<  formatNum( opCount ) << " " << args.opName << " ops ( "
+            << formatNum( vertexCount ) << " vertices)"
+            << "  -- " << formatNum( totalTime ) <<  " usec"
+            << "    (GEOS " << geosversion() << ")"
             << std::endl;
     }
 }
@@ -341,25 +355,18 @@ void GeosOp::execute() {
         exit(1);
     }
 
-    geos::util::Profile sw( op );
-    sw.start();
-
     if (fun->isBinary()) {
         executeBinary(fun);
     }
     else {
         executeUnary(fun);
     }
-
-    sw.stop();
-    totalTime = sw.getTot();
 }
 
 void GeosOp::executeUnary(GeomFunction * fun) {
     for (unsigned i = 0; i < geomA.size(); i++) {
-        opCount++;
         vertexCount += geomA[i]->getNumPoints();
-        Result* result = executeOp(fun, i, geomA[i], 0, nullptr);
+        Result* result = executeOpRepeat(fun, i, geomA[i], 0, nullptr);
 
         output(result);
         delete result;
@@ -369,10 +376,9 @@ void GeosOp::executeUnary(GeomFunction * fun) {
 void GeosOp::executeBinary(GeomFunction * fun) {
     for (unsigned ia = 0; ia < geomA.size(); ia++) {
         for (unsigned ib = 0; ib < geomB.size(); ib++) {
-            opCount++;
             vertexCount += geomA[ia]->getNumPoints();
             vertexCount += geomB[ib]->getNumPoints();
-            Result* result = executeOp(fun, ia, geomA[ia], ib, geomB[ib]);
+            Result* result = executeOpRepeat(fun, ia, geomA[ia], ib, geomB[ib]);
 
             output(result);
             delete result;
@@ -390,17 +396,33 @@ std::string inputDesc(std::string name, int index, const std::unique_ptr<Geometr
     return desc;
 }
 
+Result* GeosOp::executeOpRepeat(GeomFunction * fun,
+    int indexA,
+    const std::unique_ptr<Geometry>& geomA,
+    int indexB,
+    const std::unique_ptr<Geometry>& geomB)
+{
+    Result * res;
+    for (int i = 0; i < args.repeatNum; i++) {
+        res = executeOp(fun, indexA, geomA, indexB, geomB);
+    }
+    return res;
+}
+
 Result* GeosOp::executeOp(GeomFunction * fun,
     int indexA,
     const std::unique_ptr<Geometry>& geomA,
     int indexB,
     const std::unique_ptr<Geometry>& geomB) {
 
+    opCount++;
     geos::util::Profile sw( "op" );
     sw.start();
 
     Result* result = fun->execute( geomA, geomB, args.opArg1  );
     sw.stop();
+    double time = sw.getTot();
+    totalTime += time;
 
     // avoid cost of logging if not verbose
     if (args.isVerbose) {
@@ -409,7 +431,7 @@ Result* GeosOp::executeOp(GeomFunction * fun,
             + inputDesc("A", indexA, geomA) + " "
             + inputDesc("B", indexB, geomB)
             + " -> " + result->metadata()
-            + "  --  " + timeFormatted( sw.getTot() )
+            + "  --  " + formatNum( time ) + " usec"
         );
     }
 
@@ -428,6 +450,9 @@ void GeosOp::output(Result* result) {
         else {
             outputGeometry( result->valGeom.get() );
         }
+    }
+    else if (result->isGeometryList() ) {
+        outputGeometryList( result->valGeomList );
     }
     else {
         // output as text/WKT
@@ -460,5 +485,11 @@ void GeosOp::outputGeometry(const Geometry * geom) {
              writer.setRoundingPrecision(args.precision);
         }
         std::cout << writer.write(geom) << std::endl;
+    }
+}
+
+void GeosOp::outputGeometryList(std::vector<std::unique_ptr<const Geometry>> & list) {
+    for (size_t i = 0; i < list.size(); i++) {
+        outputGeometry( list[i].get() );
     }
 }
