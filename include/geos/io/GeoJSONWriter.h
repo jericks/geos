@@ -83,8 +83,6 @@ public:
 
 private:
 
-    GeoJSONType geojsonType;
-
     std::pair<double, double> convertCoordinate(const geom::Coordinate* c);
 
     std::vector<std::pair<double, double>> convertCoordinateSequence(const geom::CoordinateSequence* c);

@@ -173,19 +173,19 @@ std::unique_ptr<geom::Point> GeoJSONReader::readPoint(nlohmann::json& j) {
 std::unique_ptr<geom::LineString> GeoJSONReader::readLineString(nlohmann::json& j) {
     std::vector<std::pair<double,double>> coords = j["coordinates"].get<std::vector<std::pair<double,double>>>();
     std::vector<geom::Coordinate> coordinates;
-    for(int i = 0; i < coords.size(); i++) {
+    for(std::vector<int>::size_type i = 0; i < coords.size(); i++) {
         coordinates.push_back(geom::Coordinate{coords[i].first, coords[i].second});
     }
     geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
     return std::unique_ptr<geom::LineString>(geometryFactory.createLineString(coordinateSequence));
 }
 
-std::unique_ptr<geom::Polygon> GeoJSONReader::readPolygon(nlohmann::json& j) {
-    std::vector<std::vector<std::pair<double,double>>> polygonCoords = j["coordinates"].get<std::vector<std::vector<std::pair<double,double>>>>();
+std::unique_ptr<geom::Polygon> GeoJSONReader::readPolygon(nlohmann::json& json) {
+    std::vector<std::vector<std::pair<double,double>>> polygonCoords = json["coordinates"].get<std::vector<std::vector<std::pair<double,double>>>>();
     std::vector<geom::LinearRing *> rings;
-    for(int i = 0; i < polygonCoords.size(); i++) {
+    for(std::vector<int>::size_type i = 0; i < polygonCoords.size(); i++) {
         std::vector<geom::Coordinate> coordinates;
-        for (int j = 0; j < polygonCoords[i].size(); j++) {
+        for (std::vector<int>::size_type j = 0; j < polygonCoords[i].size(); j++) {
             coordinates.push_back(geom::Coordinate{polygonCoords[i][j].first, polygonCoords[i][j].second});
         }
         geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
@@ -207,19 +207,19 @@ std::unique_ptr<geom::Polygon> GeoJSONReader::readPolygon(nlohmann::json& j) {
 std::unique_ptr<geom::MultiPoint> GeoJSONReader::readMultiPoint(nlohmann::json& j) {
     std::vector<std::pair<double,double>> coords = j["coordinates"].get<std::vector<std::pair<double,double>>>();
     std::vector<geom::Coordinate> coordinates;
-    for(int i = 0; i < coords.size(); i++) {
+    for(std::vector<int>::size_type i = 0; i < coords.size(); i++) {
         coordinates.push_back(geom::Coordinate{coords[i].first, coords[i].second});
     }
     geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
     return std::unique_ptr<geom::MultiPoint>(geometryFactory.createMultiPoint(coordinateSequence));
 }
 
-std::unique_ptr<geom::MultiLineString> GeoJSONReader::readMultiLineString(nlohmann::json& j) {
-    std::vector<std::vector<std::pair<double,double>>> coords = j["coordinates"].get<std::vector<std::vector<std::pair<double,double>>>>();
+std::unique_ptr<geom::MultiLineString> GeoJSONReader::readMultiLineString(nlohmann::json& json) {
+    std::vector<std::vector<std::pair<double,double>>> coords = json["coordinates"].get<std::vector<std::vector<std::pair<double,double>>>>();
     std::vector<geom::Geometry *>* lines = new std::vector<geom::Geometry *>{};
-    for(int i = 0; i < coords.size(); i++) {
+    for(std::vector<int>::size_type i = 0; i < coords.size(); i++) {
         std::vector<geom::Coordinate> coordinates;
-        for (int j = 0; j < coords[i].size(); j++) {
+        for (std::vector<int>::size_type j = 0; j < coords[i].size(); j++) {
             coordinates.push_back(geom::Coordinate{coords[i][j].first, coords[i][j].second});
         }
         geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };
@@ -228,15 +228,15 @@ std::unique_ptr<geom::MultiLineString> GeoJSONReader::readMultiLineString(nlohma
     return std::unique_ptr<geom::MultiLineString>(geometryFactory.createMultiLineString(lines));
 }
 
-std::unique_ptr<geom::MultiPolygon> GeoJSONReader::readMultiPolygon(nlohmann::json& j) {
-    std::vector<std::vector<std::vector<std::pair<double,double>>>> multiPolygonCoords = j["coordinates"].get<std::vector<std::vector<std::vector<std::pair<double,double>>>>>();
+std::unique_ptr<geom::MultiPolygon> GeoJSONReader::readMultiPolygon(nlohmann::json& json) {
+    std::vector<std::vector<std::vector<std::pair<double,double>>>> multiPolygonCoords = json["coordinates"].get<std::vector<std::vector<std::vector<std::pair<double,double>>>>>();
     std::vector<geom::Geometry *>* polygons = new std::vector<geom::Geometry *>();
-    for(int i = 0; i < multiPolygonCoords.size(); i++) {
+    for(std::vector<int>::size_type i = 0; i < multiPolygonCoords.size(); i++) {
         std::vector<std::vector<std::pair<double,double>>> polygonCoords = multiPolygonCoords[i];
         std::vector<geom::LinearRing *> rings;
-        for(int j = 0; j < polygonCoords.size(); j++) {
+        for(std::vector<int>::size_type j = 0; j < polygonCoords.size(); j++) {
             std::vector<geom::Coordinate> coordinates;
-            for (int k = 0; k < polygonCoords[j].size(); k++) {
+            for (std::vector<int>::size_type k = 0; k < polygonCoords[j].size(); k++) {
                 coordinates.push_back(geom::Coordinate{polygonCoords[j][k].first, polygonCoords[j][k].second});
             }
             geom::CoordinateArraySequence coordinateSequence { std::move(coordinates) };

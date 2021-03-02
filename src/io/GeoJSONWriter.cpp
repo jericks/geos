@@ -105,9 +105,9 @@ std::string GeoJSONWriter::write(const GeoJSONFeatureCollection features) {
     j["type"] = "FeatureCollection";
     json featuresJson = json::array();
     for(auto const feature : features.getFeatures()) {
-        json j;
-        encodeFeature(feature, j);
-        featuresJson.push_back(j);
+        json featureJson;
+        encodeFeature(feature, featureJson);
+        featuresJson.push_back(featureJson);
     }
     j["features"] = featuresJson;
     std::string geojson = j.dump();
@@ -214,8 +214,8 @@ void GeoJSONWriter::encodeMultiLineString(const geom::MultiLineString* multiLine
     j["coordinates"] = lines;
 }
 
-void GeoJSONWriter::encodeMultiPolygon(const geom::MultiPolygon* multiPolygon, nlohmann::ordered_json& j) {
-    j["type"] = "MultiPolygon";
+void GeoJSONWriter::encodeMultiPolygon(const geom::MultiPolygon* multiPolygon, nlohmann::ordered_json& json) {
+    json["type"] = "MultiPolygon";
     std::vector<std::vector<std::vector<std::pair<double, double>>>> polygons;
     for(size_t i = 0; i < multiPolygon->getNumGeometries(); i++) {
         const Polygon* polygon = multiPolygon->getGeometryN(i);
@@ -223,12 +223,12 @@ void GeoJSONWriter::encodeMultiPolygon(const geom::MultiPolygon* multiPolygon, n
         auto ring = polygon->getExteriorRing();
         auto coords = ring->getCoordinates();
         rings.push_back(convertCoordinateSequence(ring->getCoordinates().get()));
-        for(size_t i = 0; i < polygon->getNumInteriorRing(); i++) {
+        for(size_t j = 0; j < polygon->getNumInteriorRing(); j++) {
             rings.push_back(convertCoordinateSequence(polygon->getInteriorRingN(i)->getCoordinates().get()));
         }
         polygons.push_back(rings);
     }
-    j["coordinates"] = polygons;
+    json["coordinates"] = polygons;
 }
 
 void GeoJSONWriter::encodeGeometryCollection(const geom::GeometryCollection* g, nlohmann::ordered_json& j) {
